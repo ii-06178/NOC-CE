@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+    <title>WebGL Mandelbrot Set By GPU</title>
+
+    <!-- vertex shader takes in the position of the vertex and the constant nt both of which -->
+    <!-- will be passed to the fragment shader for computations of color -->
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      #version 300 es
+      precision highp float;
+      in vec2 vPosition;
+      uniform mat3 matrix;
+      out vec2 position;
+    
+      void
+      main()
+      {
+        gl_Position = vec4(matrix * vec3(vPosition, 0.0), 1.0);
+	      gl_PointSize = 5.0;
+	      position = vPosition;
+      } 
+    </script> 
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      #version 300 es
+      precision highp float;
+      uniform float c_zoom;
+      uniform float c_x;
+      uniform float c_y;
+      uniform int nt;
+      in vec2 position;
+      out vec4 fragColor;
+      
+      // magnitude of the complex number
+      float mag(float x, float y){
+        return sqrt(pow(x,2.0) + pow(y,2.0));
+      }
+      
+      // square of the complex number
+      vec2 sqr(float x, float y){
+        vec2 sq;
+        sq[0] = pow(x,2.0) - pow(y,2.0);
+        sq[1] = 2.0*x*y;
+        return sq;
+      }
+      
+      vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
+        return a + b*cos( 6.28318*(c*t+d) );
+      }
+    
+
+      // quadratic mapping of X from the space of P,Q,R to space of A,B,<Canvas></Canvas>
+      vec4 map_point_quadratic(float P, float Q, float R, vec4 A, vec4 B, vec4 C, float X){
+        
+        vec4 result;
+
+        for (int i=0; i<4; i++){
+          result[i] = (X - Q)*(X - R)/(P - Q)/(P - R) * A[i] + 
+                      (X - P)*(X - R)/(Q - P)/(Q - R) * B[i] +
+                      (X - P)*(X - Q)/(R - P)/(R - Q) * C[i];
+        }
+        return result;
+      }
+
+      void
+      main()
+      {
+        // defining colors
+        vec4 red = vec4(201.0/255.0, 20.0/255.0, 59.0/255.0, 1.0);
+        vec4 green = vec4(128.0/255.0, 201.0/255.0, 32.0/255.0, 1.0);
+        vec4 blue = vec4(77.0/255.0, 88.0/255.0, 209.0/255.0, 1.0);
+        vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
+
+        int escape_time = 1;
+        float zx = position[0]*2.0/c_zoom + c_x;
+        float zy = position[1]*2.0/c_zoom - c_y;
+        
+        //as long as it does not move out of the circle and within the assigned nt
+        while (mag(zx,zy) <= 2.0 && escape_time < nt){
+          vec2 z = sqr(zx,zy);
+          zx = z[0] + position[0]*2.0/c_zoom + c_x;
+          zy = z[1] + position[1]*2.0/c_zoom - c_y;
+          escape_time ++;
+        }
+        
+        // interpolating colors
+        //vec4 color = map_point_quadratic(1.0, float(nt)/5.0, float(nt), red, green, blue, float(escape_time));
+
+        vec4 color = vec4(palette(float(escape_time)/float(nt), red.xyz, green.xyz, blue.xyz, black.xyz), 1.0);
+
+        fragColor = color;
+      }
+    </script>
+
+
+    <script src="http://interactivecomputergraphics.com/8E/Code%20update/Common/initShadersES6.js"></script>
+    <script src="MVES6.js"></script>
+
+    <script type="text/javascript" src="helpers.js"></script>
+    <script type="text/javascript" src="mandelbrot-gpu.js"></script>
+  </head>
+
+  <body style="
+      background-color: #242424;
+      color: rgb(255, 255, 255);
+      font-family: 'Rabbid Highway Sign II', sans-serif;
+      margin: 0; 
+      overflow: hidden
+    ">
+    <table
+        style="text-align: center;margin-left: auto; margin-right: auto; margin-top: 0%; margin-bottom: 0%; width:80%; height: 80%">
+        <tr>
+            <td style="width:70%">
+                <canvas id="gl-canvas" width="700" height="700" style="border: 1px solid rgb(255, 255, 255);">
+                    Oops ... your browser doesn't support the HTML5 canvas element
+                </canvas>
+            </td>
+            <td style="width:30%">
+                <table style="text-align: left;margin-left: 10%; margin-right: 10%; margin-top: 5%; margin-bottom: 5%;">
+                    <tr height="10%">
+                        <td colspan="2">
+                            <h1 style="text-align: center;">Mandelbrot Simulation</h1>
+                        </td>
+
+                    </tr>
+
+                    <tr>
+                        <td colspan="2">
+                            <div style="font-size: 20px; line-height: 200%; width:100%;">
+                                <i>Instructions:</i>
+
+                                <br>1. Use mouse wheel to zoom.
+                                <br>2. Click and drag to move around.
+                                
+                            </div>
+                        </td>
+                    </tr>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>
