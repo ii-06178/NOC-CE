@@ -10,6 +10,7 @@ mouseY = 0;
 window.onload = function init()
 
 {
+    let mousep=[vec2(0,0)];
     const camera = {
         x: 0.0,
         y: 0.0,
@@ -29,7 +30,8 @@ window.onload = function init()
     
     //  Load shaders and initialize attribute buffers
     let program = initShaders( gl, "vertex-shader", "fragment-shader" );
-    gl.useProgram( program );
+
+    let program_n = initShaders( gl, "vertex-shader-1", "fragment-shader" );
     
     // vertices of the corners of the canvas
     let vertices = [vec2(-1.0, 1.0), vec2(1.0, 1.0), vec2(1.0, -1.0), vec2(-1.0, -1.0)];
@@ -115,7 +117,6 @@ window.onload = function init()
         // camera needs to be moved the difference of before and after
         camera.x += preZoomX - postZoomX;
         camera.y += preZoomY - postZoomY;  
-        console.log(camera.zoom)
         
         render(vertices.length);
     });
@@ -129,52 +130,48 @@ window.onload = function init()
         evt.preventDefault();
         mouseDown = false;
     }, false);
-    canvas.addEventListener('mousemove', (e) => {
-        e.preventDefault();  
-    if (!mouseDown) {
-        render(vertices.length);
-    }
-        const [clipX, clipY] = getClipSpaceMousePosition(e);
-        // position before zooming
-        const [predragx, predragy] = transformPoint(
-            flatten(inverse3(viewProjectionMat)), 
-            [clipX, clipY]);
-            
-        const newX = e.offsetX/1000;
-        const newY = e.offsetY/1000;
-        camera.x = Math.max(-2, Math.min(2, newX));
-        camera.y = Math.max(-2, Math.min(2, newY));
+    canvas.addEventListener('mousemove', function (e) {
+        if (mouseDown) {
+        e.preventDefault();
+        var deltaX = e.clientX - mouseX,
+            deltaY = e.clientY - mouseY;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        camera.x -= deltaX/800/camera.zoom;
+        camera.y += deltaY/800/camera.zoom;}
     
-        updateViewProjection();
+    
+        mousep = [];
+        let width = canvas.width;
+        let height = canvas.height;
+        let zx_0 = 2*(e.clientX-232)/width-1;
+        let zy_0 = 2*(height-e.clientY-2)/height-1;
+
+        let [zx, zy] = [zx_0, zy_0];
         
-        render(vertices.length);
-    });
+        mousep.push(vec2(zx,zy));
+        let i = 0;
+        while (i < 50) 
+        {
+            //we calculate the square of the complex number (a^2-b^2+2abi),
+            let z = sqr(zx, zy)
+            // increment it to zx, zy and increase escape time variable by 1
+            zx = z[0] + 2*zx_0/camera.zoom + camera.x;
+            zy = z[1] + 2*zy_0/camera.zoom + camera.y;
+            mousep.push(vec2(zx,zy));
+            i++;
+        }
+            render(vertices.length);
+    }, false);
 
     function render(len) {
-        mousep=[];
-        zx=mouseX;
-        zy=mouseY;
-        while (i < 50) 
-                {
-                    //we calculate the square of the complex number (a^2+b^2+2abi),
-                    let z = sqr(zx, zy)
-                    // increment it to zx, zy and increase escape time variable by 1
-                    zx = z[0] + mouseX; 
-                    zy = z[1] + mouseY;
-                    mousep.push(vec2(zx,zy));
-                    i++;
-                }    
+        
+        gl.useProgram( program );
         // Load the data into the GPU and bind to shader variables.
         gl.bindBuffer( gl.ARRAY_BUFFER, gl.createBuffer() );
         gl.bufferData( gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW );
     
         // Associate out shader variables with our data buffer
-        let vPosition = gl.getAttribLocation( program, "vPosition" );
-        gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
-        gl.enableVertexAttribArray( vPosition );
-
-        gl.bindBuffer( gl.ARRAY_BUFFER, gl.createBuffer() );
-        gl.bufferData( gl.ARRAY_BUFFER, flatten(mousep), gl.STATIC_DRAW );
         let vPosition = gl.getAttribLocation( program, "vPosition" );
         gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
         gl.enableVertexAttribArray( vPosition );
@@ -184,7 +181,7 @@ window.onload = function init()
     
         let matrix = gl.getUniformLocation( program, "matrix" );
         gl.uniformMatrix3fv(matrix, false, [1,0,0,0,1,0,0,0,1]);
-    
+        
         let c_zoom = gl.getUniformLocation( program, "c_zoom" );
         gl.uniform1f(c_zoom, camera.zoom);
         
@@ -193,11 +190,26 @@ window.onload = function init()
         
         let c_y = gl.getUniformLocation( program, "c_y" );
         gl.uniform1f(c_y, camera.y);
-
+        
         updateViewProjection();
         
         gl.clear( gl.COLOR_BUFFER_BIT );
-        gl.drawArrays( gl.POINTS, 0, len );
+        gl.drawArrays( gl.TRIANGLE_FAN, 0, len );
+        
+        gl.useProgram( program_n );
+        
+        gl.bindBuffer( gl.ARRAY_BUFFER, gl.createBuffer() );
+        gl.bufferData( gl.ARRAY_BUFFER, flatten(mousep), gl.STATIC_DRAW );
+        
+        let vPoint = gl.getAttribLocation( program_n, "vPoint" );
+        gl.vertexAttribPointer( vPoint, 2, gl.FLOAT, false, 0, 0 );
+        gl.enableVertexAttribArray( vPoint );
+
+        let matrix_n = gl.getUniformLocation( program_n, "matrix" );
+        gl.uniformMatrix3fv(matrix_n, false, [1,0,0,0,1,0,0,0,1]);
+        
+        gl.drawArrays( gl.POINTS, 0, mousep.length );
+        gl.drawArrays( gl.LINE_STRIP, 0, mousep.length );
     }
 }
 

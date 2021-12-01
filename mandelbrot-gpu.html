@@ -11,6 +11,7 @@
       #version 300 es
       precision highp float;
       in vec2 vPosition;
+      //in vec2 vPoint;
       uniform mat3 matrix;
       out vec2 position;
     
@@ -18,8 +19,25 @@
       main()
       {
         gl_Position = vec4(matrix * vec3(vPosition, 0.0), 1.0);
-	      gl_PointSize = 5.0;
+	      gl_PointSize = 1.0;
 	      position = vPosition;
+      }
+      
+      
+    </script> 
+    <script id="vertex-shader-1" type="x-shader/x-vertex">
+      #version 300 es
+      precision highp float;
+      in vec2 vPoint;
+      uniform mat3 matrix;
+      out vec2 position;
+    
+      void
+      main()
+      {
+        gl_Position = vec4(matrix * vec3(vPoint, 0.0), 1.0);
+	      gl_PointSize = 5.0;
+	      position = vPoint;
       } 
     </script> 
 
@@ -75,13 +93,13 @@
 
         int escape_time = 1;
         float zx = position[0]*2.0/c_zoom + c_x;
-        float zy = position[1]*2.0/c_zoom - c_y;
+        float zy = position[1]*2.0/c_zoom + c_y;
         
         //as long as it does not move out of the circle and within the assigned nt
         while (mag(zx,zy) <= 2.0 && escape_time < nt){
           vec2 z = sqr(zx,zy);
           zx = z[0] + position[0]*2.0/c_zoom + c_x;
-          zy = z[1] + position[1]*2.0/c_zoom - c_y;
+          zy = z[1] + position[1]*2.0/c_zoom + c_y;
           escape_time ++;
         }
         
@@ -93,6 +111,18 @@
         fragColor = color;
       }
     </script>
+
+    <script id="fragment-shader-1" type="x-shader/x-fragment">
+
+      precision mediump float;
+      
+      varying vec4 fColor;
+      void
+      main()
+      {
+          gl_FragColor = fColor;
+      }
+      </script>
 
 
     <script src="http://interactivecomputergraphics.com/8E/Code%20update/Common/initShadersES6.js"></script>
