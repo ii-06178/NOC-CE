@@ -1,0 +1,6 @@
+{
+    "name": "Mandlebrot Interactive Viewer",
+    "description": "A tool to explore the mandlebrot sturcture by moving around and zooming into it, it generates the new pixel values accordinng to the zoom level on GPU so it won't pixelate when zoomed upto a large extent.",
+    "repository": "https://github.com/ii-06178/NOC-CE",
+    "keywords": ["Mandlebrot", "Viewer", "GPU"]
+}
