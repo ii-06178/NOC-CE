@@ -1,1 +1,1 @@
-<?php include_once("mandlebrot-gpu.html"); ?>
+<?php include_once("mandelbrot-gpu.html"); ?>
