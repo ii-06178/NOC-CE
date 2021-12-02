@@ -143,7 +143,7 @@
         style="text-align: center;margin-left: auto; margin-right: auto; margin-top: 0%; margin-bottom: 0%; width:80%; height: 80%">
         <tr>
             <td style="width:70%">
-                <canvas id="gl-canvas" width="700" height="700" style="border: 1px solid rgb(255, 255, 255);">
+                <canvas id="gl-canvas" width="700%" height="700%" style="border: 1px solid rgb(255, 255, 255); display: block;">
                     Oops ... your browser doesn't support the HTML5 canvas element
                 </canvas>
             </td>
@@ -158,13 +158,16 @@
 
                     <tr>
                         <td colspan="2">
-                            <div style="font-size: 20px; line-height: 200%; width:100%;">
+                            <div style="font-size: 15px; line-height: 200%; width:100%;">
                                 <i>Instructions:</i>
 
                                 <br>1. Use mouse wheel to zoom.
-                                <br>2. Click and drag to move around.
-                                
+                                <br>2. Click and drag to move around                                
                             </div>
+                          <div rowspan="2">
+                            <button id="toggle-cursor">Toggle Cursor</button>
+                            <button id="reset">Reset</button>
+                          </div>
                         </td>
                     </tr>
 

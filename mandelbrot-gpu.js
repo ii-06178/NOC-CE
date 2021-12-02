@@ -6,12 +6,16 @@ let escape_max;
 var mouseDown = false,
 mouseX = 0,
 mouseY = 0;
+let deltaX;
+let deltaY;
+let cursorDesign = false;
+
 
 window.onload = function init()
 
 {
     let mousep=[vec2(0,0)];
-    const camera = {
+    let camera = {
         x: 0.0,
         y: 0.0,
         rotation: 0,
@@ -105,6 +109,7 @@ window.onload = function init()
         // multiply the wheel movement by the current zoom level
         // so we zoom less when zoomed in and more when zoomed out
         const newZoom = camera.zoom * Math.pow(2, e.deltaY * -0.01);
+        // Limit zoom from 0.02 to 1000000000000
         camera.zoom = Math.max(0.02, Math.min(1000000000000, newZoom));
     
         updateViewProjection();
@@ -117,55 +122,93 @@ window.onload = function init()
         // camera needs to be moved the difference of before and after
         camera.x += preZoomX - postZoomX;
         camera.y += preZoomY - postZoomY;  
+
+        // Zoom towards mouse
+        // mouseX = evt.clientX;
+        // mouseY = evt.clientY;
+        // mouseX = 1;
+        // mouseY = 1;
+        // camera.x += (mouseX - camera.x ) / 100;
+        // camera.y += (mouseY - camera.y) / 100;
         
         render(vertices.length);
     });
+    
+
+    var cursorButton = document.getElementById("toggle-cursor")
+
+    cursorButton.addEventListener("click", function(){
+        cursorDesign = !cursorDesign;    
+        render(vertices.length);
+    });
+
+    var resetButton = document.getElementById("reset")
+
+    resetButton.addEventListener("click", function(){
+        camera = {
+            x: 0.0,
+            y: 0.0,
+            rotation: 0,
+            zoom: 1.0,
+        };
+        render(vertices.length);
+    });
+
     canvas.addEventListener('mousedown', function (evt) {
         evt.preventDefault();
         mouseDown = true;
         mouseX = evt.clientX;
         mouseY = evt.clientY;
     }, false);
+
     canvas.addEventListener('mouseup', function (evt) {
         evt.preventDefault();
         mouseDown = false;
     }, false);
-    canvas.addEventListener('mousemove', function (e) {
-        if (mouseDown) {
-        e.preventDefault();
-        var deltaX = e.clientX - mouseX,
-            deltaY = e.clientY - mouseY;
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-        camera.x -= deltaX/800/camera.zoom;
-        camera.y += deltaY/800/camera.zoom;}
-    
-    
-        mousep = [];
-        let width = canvas.width;
-        let height = canvas.height;
-        let zx_0 = 2*(e.clientX-232)/width-1;
-        let zy_0 = 2*(height-e.clientY-2)/height-1;
 
-        let [zx, zy] = [zx_0, zy_0];
+    canvas.addEventListener('mousemove', 
+        function (e) {
+            if (mouseDown) {
+                e.preventDefault();
+                deltaX = e.clientX - mouseX,
+                deltaY = e.clientY - mouseY;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                camera.x -= deltaX/(camera.zoom*400);
+                camera.y += deltaY/(camera.zoom*400);
+            }
         
-        mousep.push(vec2(zx,zy));
-        let i = 0;
-        while (i < 50) 
-        {
-            //we calculate the square of the complex number (a^2-b^2+2abi),
-            let z = sqr(zx, zy)
-            // increment it to zx, zy and increase escape time variable by 1
-            zx = z[0] + 2*zx_0/camera.zoom + camera.x;
-            zy = z[1] + 2*zy_0/camera.zoom + camera.y;
-            mousep.push(vec2(zx,zy));
-            i++;
-        }
+            
+            if (cursorDesign){
+                mousep = [];
+                let width = canvas.width;
+                let height = canvas.height;
+                let zx_0 = 2*(e.clientX-232)/width-1;
+                let zy_0 = 2*(height-e.clientY-2)/height-1;
+
+                let [zx, zy] = [zx_0, zy_0];
+                
+                mousep.push(vec2(zx,zy));
+                let i = 0;
+                while (i < 50) 
+                {
+                    //we calculate the square of the complex number (a^2-b^2+2abi),
+                    let z = sqr(zx, zy)
+                    // increment it to zx, zy and increase escape time variable by 1
+                    zx = z[0] + 2*zx_0/camera.zoom + camera.x;
+                    zy = z[1] + 2*zy_0/camera.zoom + camera.y;
+                    mousep.push(vec2(zx,zy));
+                    i++;
+                }
+                
+            }
+            
             render(vertices.length);
-    }, false);
+
+        }, false);
 
     function render(len) {
-        
+            
         gl.useProgram( program );
         // Load the data into the GPU and bind to shader variables.
         gl.bindBuffer( gl.ARRAY_BUFFER, gl.createBuffer() );
@@ -204,12 +247,14 @@ window.onload = function init()
         let vPoint = gl.getAttribLocation( program_n, "vPoint" );
         gl.vertexAttribPointer( vPoint, 2, gl.FLOAT, false, 0, 0 );
         gl.enableVertexAttribArray( vPoint );
-
+    
         let matrix_n = gl.getUniformLocation( program_n, "matrix" );
         gl.uniformMatrix3fv(matrix_n, false, [1,0,0,0,1,0,0,0,1]);
         
-        gl.drawArrays( gl.POINTS, 0, mousep.length );
-        gl.drawArrays( gl.LINE_STRIP, 0, mousep.length );
+        if (cursorDesign){
+            gl.drawArrays( gl.POINTS, 0, mousep.length );
+            gl.drawArrays( gl.LINE_STRIP, 0, mousep.length );
+        }
     }
 }
 
